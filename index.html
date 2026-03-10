@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GameZone — Free Online Games</title>
+<meta name="description" content="Play free browser games instantly. No download required."/>
+
+<!-- Load game files — add more <script src="..."> lines here to add games -->
+<script src="snake.js"></script>
+
+<!-- AdSense: replace XXXXXXXXXXXXXXXX with your publisher ID -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:    #080a0f;
+  --sur:   #0e1119;
+  --card:  #111520;
+  --b1:    #1c2135;
+  --b2:    #252d45;
+  --ac:    #1a6fff;
+  --ac2:   #0d4fd4;
+  --red:   #e03434;
+  --gold:  #d4a017;
+  --grn:   #1aaa5a;
+  --txt:   #e2e6f0;
+  --mut:   #5a6380;
+  --ff: 'Barlow Condensed', sans-serif;
+  --fm: 'JetBrains Mono', monospace;
+  --r: 8px;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--txt); font-family: var(--ff); overflow-x: hidden; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--sur); }
+::-webkit-scrollbar-thumb { background: var(--b2); border-radius: 3px; }
+
+/* ── HEADER ── */
+header {
+  position: sticky; top: 0; z-index: 200;
+  background: rgba(8,10,15,.97); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--b1);
+}
+.hdr {
+  max-width: 1440px; margin: 0 auto;
+  display: flex; align-items: center; gap: 20px;
+  height: 64px; padding: 0 24px;
+}
+.logo {
+  font-weight: 900; font-size: 22px; letter-spacing: 3px;
+  text-transform: uppercase; text-decoration: none; color: var(--txt); white-space: nowrap;
+}
+.logo span { color: var(--ac); }
+.srch {
+  flex: 1; max-width: 400px;
+  display: flex; border: 1px solid var(--b2); border-radius: var(--r);
+  overflow: hidden; background: var(--sur); transition: border-color .2s;
+}
+.srch:focus-within { border-color: var(--ac); }
+.srch input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--txt); padding: 0 14px; font-family: var(--ff); font-size: 15px;
+}
+.srch input::placeholder { color: var(--mut); }
+.srch button {
+  background: var(--ac); border: none; cursor: pointer; color: #fff;
+  font-family: var(--ff); font-weight: 700; font-size: 13px; letter-spacing: 1px; padding: 0 16px;
+  transition: background .2s;
+}
+.srch button:hover { background: var(--ac2); }
+nav { display: flex; gap: 4px; margin-left: auto; }
+nav a {
+  color: var(--mut); text-decoration: none; font-weight: 700;
+  font-size: 13px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 8px 12px; border-radius: var(--r); border: 1px solid transparent; transition: all .2s;
+}
+nav a:hover, nav a.on { color: var(--ac); border-color: var(--b2); }
+@media (max-width: 900px) { nav { display: none; } }
+
+/* ── AD STRIP ── */
+.adstrip {
+  background: var(--sur); border-bottom: 1px solid var(--b1);
+  padding: 10px 0; text-align: center;
+  min-height: 72px; display: flex; align-items: center;
+  justify-content: center; flex-direction: column; gap: 4px;
+}
+.albl { font-family: var(--fm); font-size: 10px; color: var(--mut); letter-spacing: 1px; text-transform: uppercase; }
+
+/* ── HERO ── */
+.hero {
+  background: linear-gradient(160deg, #090c18, #0a0e1e 60%, #0c0a18);
+  border-bottom: 1px solid var(--b1);
+  padding: 44px 24px 36px; text-align: center; position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 100%, rgba(26,111,255,.08), transparent 70%);
+  pointer-events: none;
+}
+.eyebrow { font-family: var(--fm); font-size: 11px; letter-spacing: 4px; color: var(--ac); text-transform: uppercase; margin-bottom: 12px; }
+.hero h1 { font-size: clamp(32px, 6vw, 68px); font-weight: 900; letter-spacing: 2px; text-transform: uppercase; line-height: 1; margin-bottom: 8px; }
+.hero h1 span { color: var(--ac); }
+.hero p { color: var(--mut); font-size: 16px; }
+.stats { display: flex; justify-content: center; gap: 48px; margin-top: 28px; flex-wrap: wrap; }
+.sv { font-family: var(--fm); font-size: 26px; font-weight: 700; display: block; }
+.sk { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--mut); margin-top: 2px; display: block; }
+
+/* ── PAGE ── */
+.page { max-width: 1440px; margin: 0 auto; padding: 28px 24px; }
+@media (max-width: 560px) { .page { padding: 16px; } }
+
+/* ── FILTERS ── */
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+.fb {
+  padding: 7px 18px; font-family: var(--ff); font-weight: 700; font-size: 13px;
+  letter-spacing: 1px; text-transform: uppercase;
+  border: 1px solid var(--b2); border-radius: 4px;
+  background: var(--sur); color: var(--mut); cursor: pointer; transition: all .2s;
+}
+.fb:hover { color: var(--txt); border-color: var(--mut); }
+.fb.on { background: var(--ac); border-color: var(--ac); color: #fff; }
+
+/* ── SECTION HEADING ── */
+.sh {
+  display: flex; align-items: center; gap: 14px;
+  font-family: var(--fm); font-size: 11px; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--mut); margin-bottom: 18px;
+}
+.sh::after { content: ''; flex: 1; height: 1px; background: var(--b1); }
+
+/* ── TWO COL ── */
+.twocol { display: grid; grid-template-columns: 1fr 300px; gap: 28px; align-items: start; }
+@media (max-width: 1024px) { .twocol { grid-template-columns: 1fr; } }
+
+/* ── GAME GRID ── */
+.gg { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .gg { grid-template-columns: repeat(2, 1fr); } }
+
+/* ── GAME CARD ── */
+.gc {
+  background: var(--card); border: 1px solid var(--b1);
+  border-radius: var(--r); overflow: hidden; cursor: pointer;
+  transition: border-color .2s, transform .2s, box-shadow .2s;
+}
+.gc:hover { border-color: var(--ac); transform: translateY(-3px); box-shadow: 0 6px 24px rgba(26,111,255,.15); }
+.gc.hidden { display: none; }
+.gc.locked { opacity: .55; cursor: default; }
+.gc.locked:hover { border-color: var(--b1); transform: none; box-shadow: none; }
+
+.gt { aspect-ratio: 16/10; display: flex; align-items: center; justify-content: center; position: relative; }
+.gt-lbl { font-family: var(--fm); font-size: 11px; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,.18); text-transform: uppercase; }
+
+.gov {
+  position: absolute; inset: 0;
+  background: rgba(26,111,255,.88);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .2s;
+}
+.gc:not(.locked):hover .gov { opacity: 1; }
+.govt { font-family: var(--fm); font-size: 11px; font-weight: 700; color: #fff; letter-spacing: 3px; }
+.gc.locked .govt { display: none; }
+
+.soon-badge {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.soon-badge span {
+  font-family: var(--fm); font-size: 9px; letter-spacing: 2px;
+  color: var(--mut); border: 1px solid var(--b2);
+  padding: 3px 8px; border-radius: 3px; text-transform: uppercase;
+}
+
+.gi { padding: 10px 12px; }
+.gn { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 6px; }
+.gfoot { display: flex; justify-content: space-between; align-items: center; }
+.cp { font-family: var(--fm); font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; }
+.pc { font-family: var(--fm); font-size: 10px; color: var(--mut); }
+
+/* Category pill colours */
+.c-action    { background: rgba(224,52,52,.15);   color: #e05a5a; }
+.c-puzzle    { background: rgba(26,111,255,.15);  color: #6aa3ff; }
+.c-racing    { background: rgba(212,160,23,.15);  color: #d4a017; }
+.c-sports    { background: rgba(26,170,90,.15);   color: #1aaa5a; }
+.c-adventure { background: rgba(148,87,235,.15);  color: #a870f0; }
+.c-casual    { background: rgba(230,120,40,.15);  color: #e0883a; }
+.c-strategy  { background: rgba(40,190,200,.15);  color: #28bec8; }
+
+/* Thumbnail bg colours per category */
+.bg-action    { background: linear-gradient(135deg, #130508, #220810); }
+.bg-puzzle    { background: linear-gradient(135deg, #020b18, #051525); }
+.bg-racing    { background: linear-gradient(135deg, #120e00, #201800); }
+.bg-sports    { background: linear-gradient(135deg, #011009, #021a10); }
+.bg-adventure { background: linear-gradient(135deg, #0a0612, #14091e); }
+.bg-casual    { background: linear-gradient(135deg, #160900, #251200); }
+.bg-strategy  { background: linear-gradient(135deg, #020c12, #041820); }
+
+.nores { grid-column: 1/-1; text-align: center; color: var(--mut); padding: 40px; font-family: var(--fm); font-size: 13px; display: none; }
+.nores.show { display: block; }
+
+/* ── SIDEBAR ── */
+.sb { display: flex; flex-direction: column; gap: 16px; }
+.adbox {
+  background: var(--sur); border: 1px dashed var(--b2); border-radius: var(--r);
+  min-height: 260px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px; color: var(--mut);
+}
+.spanel { background: var(--card); border: 1px solid var(--b1); border-radius: var(--r); overflow: hidden; }
+.shead { padding: 10px 16px; font-family: var(--fm); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--mut); border-bottom: 1px solid var(--b1); background: var(--sur); }
+.ti { display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-bottom: 1px solid var(--b1); cursor: pointer; transition: background .15s; }
+.ti:last-child { border-bottom: none; }
+.ti:hover { background: rgba(26,111,255,.05); }
+.trk { font-family: var(--fm); font-size: 10px; color: var(--mut); width: 16px; flex-shrink: 0; }
+.tinf { flex: 1; min-width: 0; }
+.tn { font-weight: 700; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tp { font-family: var(--fm); font-size: 10px; color: var(--mut); }
+
+/* ── MODAL ── */
+.mov {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.92); z-index: 1000;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(8px);
+}
+.mov.open { display: flex; }
+.modal {
+  background: var(--card); border: 1px solid var(--b2);
+  border-radius: var(--r); width: 92vw; max-width: 960px;
+  display: flex; flex-direction: column;
+  box-shadow: 0 0 80px rgba(0,0,0,.8); max-height: 95vh;
+}
+.mbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-bottom: 1px solid var(--b1);
+  background: var(--sur); flex-shrink: 0;
+}
+.mttl { font-weight: 900; font-size: 17px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mb {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--sur); border: 1px solid var(--b2);
+  color: var(--mut); font-family: var(--ff); font-weight: 700;
+  font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+  padding: 7px 12px; border-radius: 4px; cursor: pointer; transition: all .15s; flex-shrink: 0;
+}
+.mb:hover { color: var(--txt); border-color: var(--mut); }
+.mb.xb:hover { color: var(--red); border-color: var(--red); }
+.mb svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.mgame { flex: 1; position: relative; background: #000; min-height: 500px; }
+.mgame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+.mft { padding: 10px 16px; border-top: 1px solid var(--b1); background: var(--sur); text-align: center; flex-shrink: 0; }
+
+/* ── FOOTER ── */
+footer { background: #040507; border-top: 1px solid var(--b1); padding: 36px 24px 24px; margin-top: 40px; }
+.fin { max-width: 1440px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+footer .logo { font-size: 18px; }
+footer p { color: var(--mut); font-size: 13px; line-height: 1.7; }
+footer nav { display: flex; flex-wrap: wrap; justify-content: center; }
+footer nav a { color: var(--mut); text-decoration: none; font-size: 13px; font-weight: 700; padding: 5px 12px; border-right: 1px solid var(--b1); }
+footer nav a:last-child { border-right: none; }
+footer nav a:hover { color: var(--ac); }
+.copy { font-family: var(--fm); font-size: 10px; color: var(--mut); letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="hdr">
+    <a href="#" class="logo">GAME<span>ZONE</span></a>
+    <div class="srch">
+      <input type="text" id="SI" placeholder="Search games..." oninput="buildGrid()"/>
+      <button onclick="buildGrid()">SEARCH</button>
+    </div>
+    <nav>
+      <a href="#" class="on">Home</a>
+      <a href="#games">Games</a>
+      <a href="#top">Top</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ── TOP AD ── -->
+<div class="adstrip">
+  <ins class="adsbygoogle" style="display:inline-block;width:728px;height:60px"
+       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="1111111111"></ins>
+  <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  <span class="albl">Advertisement — Replace publisher ID + slot IDs with your AdSense details</span>
+</div>
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <div class="eyebrow">All games run 100% in your browser — no downloads ever</div>
+  <h1>PLAY <span>50</span> GAMES<br>FOR FREE</h1>
+  <p>Instant play. No account needed.</p>
+  <div class="stats">
+    <div><span class="sv">50</span><span class="sk">Games</span></div>
+    <div><span class="sv">7</span><span class="sk">Categories</span></div>
+    <div><span class="sv" id="TP">0</span><span class="sk">Total Plays</span></div>
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<div class="page" id="games">
+  <div class="filters">
+    <button class="fb on" onclick="setFilter('all', this)">All Games</button>
+    <button class="fb"    onclick="setFilter('action', this)">Action</button>
+    <button class="fb"    onclick="setFilter('puzzle', this)">Puzzle</button>
+    <button class="fb"    onclick="setFilter('racing', this)">Racing</button>
+    <button class="fb"    onclick="setFilter('sports', this)">Sports</button>
+    <button class="fb"    onclick="setFilter('adventure', this)">Adventure</button>
+    <button class="fb"    onclick="setFilter('casual', this)">Casual</button>
+    <button class="fb"    onclick="setFilter('strategy', this)">Strategy</button>
+  </div>
+
+  <div class="twocol">
+    <div>
+      <div class="sh">All Games</div>
+      <div class="gg" id="GG">
+        <div class="nores" id="NR">No games found.</div>
+      </div>
+    </div>
+
+    <aside class="sb">
+      <div class="adbox">
+        <ins class="adsbygoogle" style="display:block;width:300px;height:250px"
+             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="2222222222"></ins>
+        <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+        <span class="albl">Ad 300×250</span>
+        <span class="albl" style="font-size:9px">Replace with your AdSense slot</span>
+      </div>
+      <div class="spanel" id="top">
+        <div class="shead">Top Played</div>
+        <div id="TL"></div>
+      </div>
+      <div class="adbox">
+        <ins class="adsbygoogle" style="display:block;width:300px;height:250px"
+             data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="3333333333"></ins>
+        <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+        <span class="albl">Ad 300×250</span>
+        <span class="albl" style="font-size:9px">Replace with your AdSense slot</span>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- ── BOTTOM AD ── -->
+<div class="adstrip" style="margin-top:40px">
+  <ins class="adsbygoogle" style="display:inline-block;width:728px;height:60px"
+       data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="4444444444"></ins>
+  <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+  <span class="albl">Advertisement</span>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="fin">
+    <a href="#" class="logo">GAME<span>ZONE</span></a>
+    <p>50 free browser-based games. No download, no account required.<br>
+       All games run directly in your browser using HTML5 and JavaScript.</p>
+    <nav>
+      <a href="#">Home</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Use</a>
+      <a href="#">Contact</a>
+    </nav>
+    <p class="copy">2026 GAMEZONE — ALL RIGHTS RESERVED</p>
+  </div>
+</footer>
+
+<!-- ── GAME MODAL ── -->
+<div class="mov" id="MOV">
+  <div class="modal">
+    <div class="mbar">
+      <span class="mttl" id="MT">Game</span>
+      <button class="mb" onclick="goFS()">
+        <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        Fullscreen
+      </button>
+      <button class="mb xb" onclick="closeModal()">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Close
+      </button>
+    </div>
+    <div class="mgame" id="MG">
+      <iframe id="GF" sandbox="allow-scripts" allowfullscreen title="Game"></iframe>
+    </div>
+    <div class="mft">
+      <ins class="adsbygoogle" style="display:inline-block;width:468px;height:60px"
+           data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" data-ad-slot="5555555555"></ins>
+      <script>(adsbygoogle=window.adsbygoogle||[]).push({});</script>
+      <span class="albl">Advertisement</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── GAME CATALOGUE ────────────────────────────────────────────
+// window.GAMES is populated by external JS files (e.g. snake.js).
+// Any game listed here but NOT in window.GAMES shows as "Coming Soon".
+window.GAMES = window.GAMES || {};
+
+var CATALOGUE = [
+  // Action
+  { id: 'snake',            name: 'Snake',           cat: 'casual',    bg: 'bg-casual'    },
+  { id: 'tetris',           name: 'Tetris',          cat: 'puzzle',    bg: 'bg-puzzle'    },
+  { id: 'breakout',         name: 'Breakout',        cat: 'action',    bg: 'bg-action'    },
+  { id: 'space-invaders',   name: 'Space Invaders',  cat: 'action',    bg: 'bg-action'    },
+  { id: 'flappy',           name: 'Flappy Bird',     cat: 'casual',    bg: 'bg-casual'    },
+  { id: 'pac-man',          name: 'Pac-Man',         cat: 'action',    bg: 'bg-action'    },
+  { id: 'asteroids',        name: 'Asteroids',       cat: 'action',    bg: 'bg-action'    },
+  { id: 'jumper',           name: 'Jumper',          cat: 'action',    bg: 'bg-action'    },
+  { id: 'missile-command',  name: 'Missile Command', cat: 'action',    bg: 'bg-action'    },
+  { id: 'bubble-shooter',   name: 'Bubble Shooter',  cat: 'action',    bg: 'bg-action'    },
+  // Puzzle
+  { id: '2048',             name: '2048',            cat: 'puzzle',    bg: 'bg-puzzle'    },
+  { id: 'minesweeper',      name: 'Minesweeper',     cat: 'puzzle',    bg: 'bg-puzzle'    },
+  { id: 'memory',           name: 'Memory Match',    cat: 'puzzle',    bg: 'bg-puzzle'    },
+  { id: 'maze',             name: 'Maze',            cat: 'puzzle',    bg: 'bg-puzzle'    },
+  { id: 'lights-out',       name: 'Lights Out',      cat: 'puzzle',    bg: 'bg-puzzle'    },
+  { id: 'sliding-puzzle',   name: 'Sliding Puzzle',  cat: 'puzzle',    bg: 'bg-puzzle'    },
+  { id: 'sudoku',           name: 'Sudoku',          cat: 'puzzle',    bg: 'bg-puzzle'    },
+  // Racing
+  { id: 'car-dodge',        name: 'Car Dodge',       cat: 'racing',    bg: 'bg-racing'    },
+  { id: 'car-race',         name: 'Car Race',        cat: 'racing',    bg: 'bg-racing'    },
+  { id: 'sky-racer',        name: 'Sky Racer',       cat: 'racing',    bg: 'bg-racing'    },
+  { id: 'speed-boat',       name: 'Speed Boat',      cat: 'racing',    bg: 'bg-racing'    },
+  { id: 'turbo-drift',      name: 'Turbo Drift',     cat: 'racing',    bg: 'bg-racing'    },
+  { id: 'heli-escape',      name: 'Heli Escape',     cat: 'racing',    bg: 'bg-racing'    },
+  { id: 'galaxy-racer',     name: 'Galaxy Racer',    cat: 'racing',    bg: 'bg-racing'    },
+  // Sports
+  { id: 'pong',             name: 'Pong',            cat: 'sports',    bg: 'bg-sports'    },
+  { id: 'air-hockey',       name: 'Air Hockey',      cat: 'sports',    bg: 'bg-sports'    },
+  { id: 'basketball',       name: 'Basketball',      cat: 'sports',    bg: 'bg-sports'    },
+  { id: 'soccer',           name: 'Soccer',          cat: 'sports',    bg: 'bg-sports'    },
+  { id: 'tennis',           name: 'Tennis',          cat: 'sports',    bg: 'bg-sports'    },
+  { id: 'mini-golf',        name: 'Mini Golf',       cat: 'sports',    bg: 'bg-sports'    },
+  { id: 'archery',          name: 'Archery',         cat: 'sports',    bg: 'bg-sports'    },
+  // Adventure
+  { id: 'word-scramble',    name: 'Word Scramble',   cat: 'adventure', bg: 'bg-adventure' },
+  { id: 'trivia',           name: 'Trivia Quiz',     cat: 'adventure', bg: 'bg-adventure' },
+  { id: 'math-blitz',       name: 'Math Blitz',      cat: 'adventure', bg: 'bg-adventure' },
+  { id: 'adventure',        name: 'Adventure',       cat: 'adventure', bg: 'bg-adventure' },
+  { id: 'rpg',              name: 'RPG Quest',       cat: 'adventure', bg: 'bg-adventure' },
+  { id: 'dungeon-crawler',  name: 'Dungeon Crawler',  cat: 'adventure', bg: 'bg-adventure' },
+  // Casual
+  { id: 'simon',            name: 'Simon Says',      cat: 'casual',    bg: 'bg-casual'    },
+  { id: 'whack-mole',       name: 'Whack-a-Mole',   cat: 'casual',    bg: 'bg-casual'    },
+  { id: 'reaction-test',    name: 'Reaction Test',   cat: 'casual',    bg: 'bg-casual'    },
+  { id: 'typing-speed',     name: 'Typing Speed',    cat: 'casual',    bg: 'bg-casual'    },
+  { id: 'number-hunt',      name: 'Number Hunt',     cat: 'casual',    bg: 'bg-casual'    },
+  { id: 'color-match',      name: 'Color Match',     cat: 'casual',    bg: 'bg-casual'    },
+  { id: 'rhythm-tap',       name: 'Rhythm Tap',      cat: 'casual',    bg: 'bg-casual'    },
+  { id: 'click-speed',      name: 'Click Speed',     cat: 'casual',    bg: 'bg-casual'    },
+  // Strategy
+  { id: 'connect-four',     name: 'Connect Four',    cat: 'strategy',  bg: 'bg-strategy'  },
+  { id: 'tictactoe',        name: 'Tic Tac Toe',     cat: 'strategy',  bg: 'bg-strategy'  },
+  { id: 'blackjack',        name: 'Blackjack',       cat: 'strategy',  bg: 'bg-strategy'  },
+  { id: 'tower-defense',    name: 'Tower Defense',   cat: 'strategy',  bg: 'bg-strategy'  },
+  { id: 'card-war',         name: 'Card War',        cat: 'strategy',  bg: 'bg-strategy'  },
+  { id: 'chess',            name: 'Chess',           cat: 'strategy',  bg: 'bg-strategy'  },
+];
+
+// ── PLAY COUNTS ───────────────────────────────────────────────
+var BASE_COUNTS = {
+  snake:4821, tetris:6203, breakout:3912, 'space-invaders':5540,
+  flappy:7831, pong:4102, '2048':5290, minesweeper:2801,
+  memory:1940, 'connect-four':2310, tictactoe:3120, simon:1504,
+  'car-dodge':3871, maze:2190, 'pac-man':6940, asteroids:4320
+};
+
+function getPlays(id) {
+  var base = BASE_COUNTS[id] || 800;
+  var extra = parseInt(localStorage.getItem('gz_' + id) || '0');
+  return base + extra;
+}
+function incPlays(id) {
+  var n = parseInt(localStorage.getItem('gz_' + id) || '0') + 1;
+  localStorage.setItem('gz_' + id, n);
+}
+function fmtNum(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000)    return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+
+// ── FILTERING STATE ───────────────────────────────────────────
+var activeFilter = 'all';
+
+function setFilter(cat, btn) {
+  activeFilter = cat;
+  document.querySelectorAll('.fb').forEach(function(b) { b.classList.remove('on'); });
+  btn.classList.add('on');
+  buildGrid();
+}
+
+// ── BUILD GRID ────────────────────────────────────────────────
+function buildGrid() {
+  var grid  = document.getElementById('GG');
+  var query = document.getElementById('SI').value.toLowerCase().trim();
+
+  // Remove old cards (keep the #NR element)
+  Array.from(grid.querySelectorAll('.gc')).forEach(function(el) { el.remove(); });
+
+  var visible = 0;
+
+  CATALOGUE.forEach(function(g) {
+    var matchCat = activeFilter === 'all' || g.cat === activeFilter;
+    var matchQ   = !query || g.name.toLowerCase().includes(query) || g.cat.includes(query);
+    var hasGame  = !!window.GAMES[g.id];
+
+    var el = document.createElement('div');
+    el.className = 'gc' + (hasGame ? '' : ' locked') + (matchCat && matchQ ? '' : ' hidden');
+    el.dataset.id = g.id;
+
+    var overlay = hasGame
+      ? '<div class="gov"><span class="govt">▶ PLAY</span></div>'
+      : '<div class="gov"></div><div class="soon-badge"><span>Coming Soon</span></div>';
+
+    el.innerHTML =
+      '<div class="gt ' + g.bg + '">' +
+        '<span class="gt-lbl">' + g.name.toUpperCase() + '</span>' +
+        overlay +
+      '</div>' +
+      '<div class="gi">' +
+        '<div class="gn">' + g.name + '</div>' +
+        '<div class="gfoot">' +
+          '<span class="cp c-' + g.cat + '">' + g.cat + '</span>' +
+          '<span class="pc" id="pc_' + g.id + '">' + fmtNum(getPlays(g.id)) + '</span>' +
+        '</div>' +
+      '</div>';
+
+    if (hasGame) {
+      el.addEventListener('click', function() { openGame(g.id, g.name); });
+    }
+
+    grid.insertBefore(el, document.getElementById('NR'));
+    if (matchCat && matchQ) visible++;
+  });
+
+  document.getElementById('NR').className = 'nores' + (visible === 0 ? ' show' : '');
+  buildTopList();
+  updateTotal();
+}
+
+// ── TOP LIST ─────────────────────────────────────────────────
+function buildTopList() {
+  var sorted = CATALOGUE.slice()
+    .sort(function(a, b) { return getPlays(b.id) - getPlays(a.id); })
+    .slice(0, 8);
+
+  document.getElementById('TL').innerHTML = sorted.map(function(g, i) {
+    return '<div class="ti" onclick="' + (window.GAMES[g.id] ? 'openGame(\'' + g.id + '\',\'' + g.name + '\')' : '') + '">' +
+      '<span class="trk">' + (i + 1) + '</span>' +
+      '<div class="tinf">' +
+        '<div class="tn">' + g.name + '</div>' +
+        '<div class="tp">' + fmtNum(getPlays(g.id)) + ' plays</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function updateTotal() {
+  var t = CATALOGUE.reduce(function(acc, g) { return acc + getPlays(g.id); }, 0);
+  document.getElementById('TP').textContent = fmtNum(t);
+}
+
+// ── OPEN / CLOSE MODAL ────────────────────────────────────────
+function openGame(id, name) {
+  if (!window.GAMES[id]) return;
+
+  incPlays(id);
+  var pcEl = document.getElementById('pc_' + id);
+  if (pcEl) pcEl.textContent = fmtNum(getPlays(id));
+  buildTopList();
+  updateTotal();
+
+  document.getElementById('MT').textContent = name;
+  document.getElementById('GF').srcdoc = window.GAMES[id].html;
+  document.getElementById('MOV').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('MOV').classList.remove('open');
+  document.getElementById('GF').srcdoc = '';
+  document.body.style.overflow = '';
+}
+
+// Close on backdrop click
+document.getElementById('MOV').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Close on Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+// Fullscreen
+function goFS() {
+  var el = document.getElementById('MG');
+  var fn = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullscreen;
+  if (fn) fn.call(el);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+buildGrid();
+</script>
+</body>
+</html>
