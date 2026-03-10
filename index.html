@@ -609,5 +609,1094 @@ function goFS() {
 // ── INIT ─────────────────────────────────────────────────────
 buildGrid();
 </script>
+  // ──────────────────────────────────────────────
+// SNAKE — drop this file next to gamezone.html
+// ──────────────────────────────────────────────
+window.GAMES = window.GAMES || {};
+
+window.GAMES["snake"] = {
+  name: "Snake",
+  category: "casual",
+  html: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #060810;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 8px;
+    font-family: 'Courier New', monospace;
+    color: #e2e6f0;
+    overflow: hidden;
+    user-select: none;
+  }
+  canvas {
+    display: block;
+    border: 1px solid #1c2135;
+    cursor: pointer;
+  }
+  #hud { font-size: 13px; letter-spacing: 2px; color: #1a6fff; }
+  #msg { font-size: 11px; color: #5a6380; text-align: center; padding: 0 12px; }
+  #start-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(6,8,16,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    cursor: pointer;
+  }
+  #start-overlay h2 { font-size: 22px; letter-spacing: 3px; color: #1a6fff; }
+  #start-overlay p { font-size: 12px; color: #5a6380; letter-spacing: 1px; }
+  #wrap { position: relative; }
+</style>
+</head>
+<body>
+
+<div id="hud">SCORE <span id="sc">0</span> &nbsp; BEST <span id="hi">0</span></div>
+<div id="wrap">
+  <canvas id="c" width="400" height="400"></canvas>
+  <div id="start-overlay" onclick="startGame()">
+    <h2>SNAKE</h2>
+    <p>CLICK HERE TO PLAY</p>
+    <p style="color:#252d45">Arrow keys or WASD &middot; Space to restart</p>
+  </div>
+</div>
+<div id="msg">Arrow keys or WASD &mdash; Space to restart</div>
+
+<script>
+  var canvas = document.getElementById('c');
+  var ctx = canvas.getContext('2d');
+  var Z = 20, COLS = 20, ROWS = 20;
+  var snake, dir, nextDir, food, score, best = 0, loop, started = false;
+
+  function randFood() {
+    var f;
+    do {
+      f = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+    } while (snake.some(function(s){ return s.x === f.x && s.y === f.y; }));
+    return f;
+  }
+
+  function newGame() {
+    snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+    dir = nextDir = { x: 1, y: 0 };
+    score = 0;
+    document.getElementById('sc').textContent = 0;
+    document.getElementById('msg').textContent = 'Arrow keys or WASD \u2014 Space to restart';
+    food = randFood();
+    clearInterval(loop);
+    loop = setInterval(tick, 130);
+    draw();
+  }
+
+  function startGame() {
+    document.getElementById('start-overlay').style.display = 'none';
+    canvas.focus();
+    started = true;
+    newGame();
+  }
+
+  function tick() {
+    dir = nextDir;
+    var head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+    // wall collision
+    if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) { die(); return; }
+    // self collision
+    if (snake.some(function(s){ return s.x === head.x && s.y === head.y; })) { die(); return; }
+
+    snake.unshift(head);
+    if (head.x === food.x && head.y === food.y) {
+      score++;
+      document.getElementById('sc').textContent = score;
+      food = randFood();
+    } else {
+      snake.pop();
+    }
+    draw();
+  }
+
+  function die() {
+    clearInterval(loop);
+    best = Math.max(best, score);
+    document.getElementById('hi').textContent = best;
+    document.getElementById('msg').textContent = 'GAME OVER \u2014 Space to restart';
+    // flash red
+    ctx.fillStyle = 'rgba(224,52,52,0.15)';
+    ctx.fillRect(0, 0, 400, 400);
+  }
+
+  function draw() {
+    ctx.fillStyle = '#060810';
+    ctx.fillRect(0, 0, 400, 400);
+
+    // subtle grid
+    ctx.strokeStyle = '#0c0f1a';
+    ctx.lineWidth = 0.5;
+    for (var i = 0; i <= COLS; i++) {
+      ctx.beginPath(); ctx.moveTo(i*Z, 0); ctx.lineTo(i*Z, 400); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i*Z); ctx.lineTo(400, i*Z); ctx.stroke();
+    }
+
+    // food
+    ctx.fillStyle = '#e03434';
+    ctx.beginPath();
+    ctx.arc(food.x*Z + Z/2, food.y*Z + Z/2, 7, 0, Math.PI*2);
+    ctx.fill();
+
+    // snake
+    snake.forEach(function(seg, i) {
+      ctx.fillStyle = i === 0 ? '#1a6fff' : '#0d4fd4';
+      ctx.fillRect(seg.x*Z + 1, seg.y*Z + 1, Z - 2, Z - 2);
+    });
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (!started) { startGame(); return; }
+    var k = e.key;
+    if ((k === 'ArrowUp'    || k === 'w') && dir.y !== 1)  nextDir = { x: 0, y: -1 };
+    if ((k === 'ArrowDown'  || k === 's') && dir.y !== -1) nextDir = { x: 0, y:  1 };
+    if ((k === 'ArrowLeft'  || k === 'a') && dir.x !== 1)  nextDir = { x: -1, y: 0 };
+    if ((k === 'ArrowRight' || k === 'd') && dir.x !== -1) nextDir = { x:  1, y: 0 };
+    if (k === ' ') { if (started) newGame(); }
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(k)) e.preventDefault();
+  });
+
+  // initial draw so canvas isn't blank
+  snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+  dir = nextDir = { x: 1, y: 0 };
+  food = { x: 14, y: 10 };
+  draw();
+<\/script>
+</body>
+</html>`
+};
+  // ──────────────────────────────────────────────
+// TETRIS — drop this file next to gamezone.html
+// then add: <script src="tetris.js"></script>
+// ──────────────────────────────────────────────
+window.GAMES = window.GAMES || {};
+
+window.GAMES["tetris"] = {
+  name: "Tetris",
+  category: "puzzle",
+  html: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #060810;
+    display: flex; flex-direction: row;
+    align-items: center; justify-content: center;
+    gap: 20px;
+    font-family: 'Courier New', monospace;
+    color: #e2e6f0;
+    overflow: hidden;
+    user-select: none;
+  }
+  canvas { display: block; border: 1px solid #1c2135; }
+  #side {
+    display: flex; flex-direction: column;
+    gap: 16px; min-width: 90px;
+  }
+  .stat-label { font-size: 10px; letter-spacing: 2px; color: #5a6380; text-transform: uppercase; }
+  .stat-value { font-size: 22px; font-weight: 700; color: #e2e6f0; margin-top: 2px; }
+  #next-label { font-size: 10px; letter-spacing: 2px; color: #5a6380; text-transform: uppercase; margin-bottom: 6px; }
+  #next-canvas { border: 1px solid #1c2135; display: block; }
+  #msg {
+    font-size: 10px; color: #5a6380; letter-spacing: 1px;
+    text-align: center; margin-top: 8px; line-height: 1.6;
+  }
+  #start-overlay {
+    position: fixed; inset: 0;
+    background: rgba(6,8,16,0.88);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px; cursor: pointer; z-index: 10;
+  }
+  #start-overlay h2 { font-size: 26px; letter-spacing: 4px; color: #1a6fff; }
+  #start-overlay p  { font-size: 11px; color: #5a6380; letter-spacing: 2px; }
+</style>
+</head>
+<body>
+
+<div id="start-overlay" onclick="startGame()">
+  <h2>TETRIS</h2>
+  <p>CLICK TO PLAY</p>
+  <p style="color:#252d45;font-size:10px">Arrow keys &middot; Up to rotate &middot; Space to drop</p>
+</div>
+
+<canvas id="board" width="200" height="400"></canvas>
+
+<div id="side">
+  <div>
+    <div class="stat-label">Score</div>
+    <div class="stat-value" id="sc">0</div>
+  </div>
+  <div>
+    <div class="stat-label">Level</div>
+    <div class="stat-value" id="lv">1</div>
+  </div>
+  <div>
+    <div class="stat-label">Lines</div>
+    <div class="stat-value" id="ln">0</div>
+  </div>
+  <div>
+    <div id="next-label">Next</div>
+    <canvas id="next-canvas" width="80" height="80"></canvas>
+  </div>
+  <div id="msg">← → move<br>↑ rotate<br>↓ soft drop<br>Space hard drop<br>Space restart</div>
+</div>
+
+<script>
+  var BC = document.getElementById('board');
+  var BX = BC.getContext('2d');
+  var NC = document.getElementById('next-canvas');
+  var NX = NC.getContext('2d');
+  var B = 20; // block size in px
+  var COLS = 10, ROWS = 20;
+
+  var SHAPES = [
+    [[1,1,1,1]],                          // I
+    [[1,1],[1,1]],                        // O
+    [[0,1,1],[1,1,0]],                    // S
+    [[1,1,0],[0,1,1]],                    // Z
+    [[1,0,0],[1,1,1]],                    // J
+    [[0,0,1],[1,1,1]],                    // L
+    [[0,1,0],[1,1,1]]                     // T
+  ];
+  var COLORS = ['#1a6fff','#d4a017','#1aaa5a','#e03434','#a870f0','#e0883a','#28bec8'];
+
+  var board, current, next, score, level, lines, loop, gameOver;
+
+  function emptyBoard() {
+    return Array.from({length: ROWS}, function() { return new Array(COLS).fill(0); });
+  }
+
+  function randPiece() {
+    var i = Math.floor(Math.random() * SHAPES.length);
+    return {
+      shape: SHAPES[i].map(function(r) { return r.slice(); }),
+      color: COLORS[i],
+      x: Math.floor(COLS / 2) - Math.floor(SHAPES[i][0].length / 2),
+      y: 0
+    };
+  }
+
+  function rotate(shape) {
+    return shape[0].map(function(_, i) {
+      return shape.map(function(r) { return r[i]; }).reverse();
+    });
+  }
+
+  function fits(shape, ox, oy) {
+    return shape.every(function(row, ri) {
+      return row.every(function(v, ci) {
+        if (!v) return true;
+        var nx = ox + ci, ny = oy + ri;
+        return nx >= 0 && nx < COLS && ny < ROWS && (ny < 0 || !board[ny][nx]);
+      });
+    });
+  }
+
+  function place() {
+    current.shape.forEach(function(row, ri) {
+      row.forEach(function(v, ci) {
+        if (v && current.y + ri >= 0) {
+          board[current.y + ri][current.x + ci] = current.color;
+        }
+      });
+    });
+
+    // clear full lines
+    var cleared = 0;
+    board = board.filter(function(row) {
+      if (row.every(function(c) { return c; })) { cleared++; return false; }
+      return true;
+    });
+    while (board.length < ROWS) board.unshift(new Array(COLS).fill(0));
+
+    if (cleared) {
+      lines += cleared;
+      score += [0, 100, 300, 500, 800][cleared] * level;
+      level = Math.floor(lines / 10) + 1;
+      document.getElementById('sc').textContent = score;
+      document.getElementById('lv').textContent = level;
+      document.getElementById('ln').textContent = lines;
+      clearInterval(loop);
+      loop = setInterval(tick, Math.max(80, 500 - (level - 1) * 45));
+    }
+
+    current = next;
+    next = randPiece();
+    drawNext();
+
+    if (!fits(current.shape, current.x, current.y)) {
+      clearInterval(loop);
+      gameOver = true;
+      document.getElementById('msg').textContent = 'GAME OVER\nSpace to restart';
+      // draw red tint
+      BX.fillStyle = 'rgba(224,52,52,0.2)';
+      BX.fillRect(0, 0, BC.width, BC.height);
+    }
+  }
+
+  function tick() {
+    if (fits(current.shape, current.x, current.y + 1)) {
+      current.y++;
+    } else {
+      place();
+    }
+    draw();
+  }
+
+  function hardDrop() {
+    while (fits(current.shape, current.x, current.y + 1)) current.y++;
+    place();
+    draw();
+  }
+
+  function draw() {
+    BX.fillStyle = '#060810';
+    BX.fillRect(0, 0, BC.width, BC.height);
+
+    // subtle grid
+    BX.strokeStyle = '#0c0f1a';
+    BX.lineWidth = 0.5;
+    for (var i = 0; i <= COLS; i++) {
+      BX.beginPath(); BX.moveTo(i*B, 0); BX.lineTo(i*B, BC.height); BX.stroke();
+    }
+    for (var j = 0; j <= ROWS; j++) {
+      BX.beginPath(); BX.moveTo(0, j*B); BX.lineTo(BC.width, j*B); BX.stroke();
+    }
+
+    // placed blocks
+    board.forEach(function(row, ri) {
+      row.forEach(function(c, ci) {
+        if (c) drawBlock(BX, ci, ri, c);
+      });
+    });
+
+    // ghost piece
+    var gy = current.y;
+    while (fits(current.shape, current.x, gy + 1)) gy++;
+    if (gy !== current.y) {
+      BX.globalAlpha = 0.15;
+      current.shape.forEach(function(row, ri) {
+        row.forEach(function(v, ci) {
+          if (v) drawBlock(BX, current.x + ci, gy + ri, current.color);
+        });
+      });
+      BX.globalAlpha = 1;
+    }
+
+    // active piece
+    current.shape.forEach(function(row, ri) {
+      row.forEach(function(v, ci) {
+        if (v) drawBlock(BX, current.x + ci, current.y + ri, current.color);
+      });
+    });
+  }
+
+  function drawBlock(ctx, cx, cy, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(cx * B + 1, cy * B + 1, B - 2, B - 2);
+    // highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(cx * B + 1, cy * B + 1, B - 2, 4);
+  }
+
+  function drawNext() {
+    NX.fillStyle = '#060810';
+    NX.fillRect(0, 0, NC.width, NC.height);
+    var offX = Math.floor((4 - next.shape[0].length) / 2);
+    var offY = Math.floor((4 - next.shape.length) / 2);
+    next.shape.forEach(function(row, ri) {
+      row.forEach(function(v, ci) {
+        if (v) drawBlock(NX, offX + ci, offY + ri, next.color);
+      });
+    });
+  }
+
+  function newGame() {
+    board = emptyBoard();
+    score = 0; level = 1; lines = 0; gameOver = false;
+    document.getElementById('sc').textContent = 0;
+    document.getElementById('lv').textContent = 1;
+    document.getElementById('ln').textContent = 0;
+    document.getElementById('msg').textContent = '\u2190 \u2192 move\n\u2191 rotate\n\u2193 soft drop\nSpace hard drop\nSpace restart';
+    current = randPiece();
+    next    = randPiece();
+    drawNext();
+    clearInterval(loop);
+    loop = setInterval(tick, 500);
+    draw();
+  }
+
+  function startGame() {
+    document.getElementById('start-overlay').style.display = 'none';
+    newGame();
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (document.getElementById('start-overlay').style.display !== 'none') {
+      startGame(); return;
+    }
+
+    if (e.key === ' ') {
+      e.preventDefault();
+      if (gameOver) { newGame(); return; }
+      hardDrop(); return;
+    }
+
+    if (gameOver) return;
+
+    if (e.key === 'ArrowLeft') {
+      if (fits(current.shape, current.x - 1, current.y)) current.x--;
+    } else if (e.key === 'ArrowRight') {
+      if (fits(current.shape, current.x + 1, current.y)) current.x++;
+    } else if (e.key === 'ArrowDown') {
+      if (fits(current.shape, current.x, current.y + 1)) current.y++;
+      else { place(); }
+    } else if (e.key === 'ArrowUp') {
+      var r = rotate(current.shape);
+      if (fits(r, current.x, current.y)) current.shape = r;
+      // wall kick
+      else if (fits(r, current.x - 1, current.y)) { current.shape = r; current.x--; }
+      else if (fits(r, current.x + 1, current.y)) { current.shape = r; current.x++; }
+    }
+
+    if (['ArrowLeft','ArrowRight','ArrowDown','ArrowUp'].includes(e.key)) {
+      e.preventDefault();
+      draw();
+    }
+  });
+<\/script>
+</body>
+</html>`
+};
+  // ──────────────────────────────────────────────
+// BREAKOUT — drop this file next to gamezone.html
+// then add: <script src="breakout.js"></script>
+// ──────────────────────────────────────────────
+window.GAMES = window.GAMES || {};
+
+window.GAMES["breakout"] = {
+  name: "Breakout",
+  category: "action",
+  html: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #060810;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 8px;
+    font-family: 'Courier New', monospace;
+    color: #e2e6f0;
+    overflow: hidden;
+    user-select: none;
+  }
+  canvas { display: block; border: 1px solid #1c2135; cursor: none; }
+  #hud { font-size: 12px; letter-spacing: 2px; color: #1a6fff; }
+  #msg { font-size: 11px; color: #5a6380; text-align: center; letter-spacing: 1px; }
+  #start-overlay {
+    position: fixed; inset: 0;
+    background: rgba(6,8,16,0.88);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px; cursor: pointer; z-index: 10;
+  }
+  #start-overlay h2 { font-size: 26px; letter-spacing: 4px; color: #1a6fff; }
+  #start-overlay p  { font-size: 11px; color: #5a6380; letter-spacing: 2px; }
+</style>
+</head>
+<body>
+
+<div id="start-overlay" onclick="startGame()">
+  <h2>BREAKOUT</h2>
+  <p>CLICK TO PLAY</p>
+  <p style="color:#252d45;font-size:10px">Mouse or arrow keys to move paddle</p>
+</div>
+
+<div id="hud">SCORE <span id="sc">0</span> &nbsp; LIVES <span id="lv">3</span> &nbsp; LEVEL <span id="lvl">1</span></div>
+<canvas id="c" width="480" height="420"></canvas>
+<div id="msg">Mouse or ← → keys to move &mdash; Space to launch / restart</div>
+
+<script>
+  var canvas = document.getElementById('c');
+  var ctx    = canvas.getContext('2d');
+  var W = 480, H = 420;
+
+  var BRICK_COLS = 10, BRICK_ROWS = 6;
+  var BRICK_W = 42, BRICK_H = 14, BRICK_PAD = 4, BRICK_TOP = 48;
+
+  var ROW_COLORS = ['#e03434','#e0883a','#d4a017','#1aaa5a','#1a6fff','#a870f0'];
+
+  var paddle, ball, bricks, score, lives, level, launched, raf, gameOver;
+
+  function makeBricks() {
+    bricks = [];
+    for (var r = 0; r < BRICK_ROWS; r++) {
+      for (var c = 0; c < BRICK_COLS; c++) {
+        var x = c * (BRICK_W + BRICK_PAD) + BRICK_PAD + 5;
+        var y = r * (BRICK_H + BRICK_PAD) + BRICK_TOP;
+        // higher rows take more hits on later levels
+        var hp = Math.min(level, r < 2 ? 1 : r < 4 ? 1 : 1);
+        bricks.push({ x: x, y: y, hp: hp, alive: true, color: ROW_COLORS[r] });
+      }
+    }
+  }
+
+  function resetBall() {
+    ball = {
+      x: paddle.x + paddle.w / 2,
+      y: paddle.y - 10,
+      r: 8,
+      vx: 0, vy: 0
+    };
+    launched = false;
+  }
+
+  function newLevel() {
+    paddle = { x: W / 2 - 40, y: H - 28, w: 80, h: 10 };
+    makeBricks();
+    resetBall();
+  }
+
+  function newGame() {
+    score = 0; lives = 3; level = 1; gameOver = false;
+    document.getElementById('sc').textContent  = 0;
+    document.getElementById('lv').textContent  = 3;
+    document.getElementById('lvl').textContent = 1;
+    document.getElementById('msg').textContent = 'Mouse or \u2190 \u2192 keys \u2014 Space to launch / restart';
+    newLevel();
+  }
+
+  function launch() {
+    if (launched) return;
+    launched = true;
+    var spd = 4 + level * 0.4;
+    var ang = -Math.PI / 2 + (Math.random() - 0.5) * 0.8;
+    ball.vx = Math.cos(ang) * spd;
+    ball.vy = Math.sin(ang) * spd;
+  }
+
+  // ── PHYSICS ──────────────────────────────────
+  function update() {
+    if (!launched) {
+      ball.x = paddle.x + paddle.w / 2;
+      return;
+    }
+
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    // wall bounces
+    if (ball.x - ball.r < 0)  { ball.x = ball.r;     ball.vx =  Math.abs(ball.vx); }
+    if (ball.x + ball.r > W)  { ball.x = W - ball.r; ball.vx = -Math.abs(ball.vx); }
+    if (ball.y - ball.r < 0)  { ball.y = ball.r;     ball.vy =  Math.abs(ball.vy); }
+
+    // paddle bounce
+    if (
+      ball.vy > 0 &&
+      ball.y + ball.r >= paddle.y &&
+      ball.y + ball.r <= paddle.y + paddle.h + Math.abs(ball.vy) &&
+      ball.x >= paddle.x - ball.r &&
+      ball.x <= paddle.x + paddle.w + ball.r
+    ) {
+      ball.vy = -Math.abs(ball.vy);
+      // angle based on hit position
+      var hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
+      ball.vx = hit * (4 + level * 0.4);
+      // keep speed consistent
+      var spd = Math.hypot(ball.vx, ball.vy);
+      var target = 4 + level * 0.4;
+      ball.vx = (ball.vx / spd) * target;
+      ball.vy = (ball.vy / spd) * target;
+      ball.vy = -Math.abs(ball.vy);
+    }
+
+    // brick collision
+    var hit = false;
+    bricks.forEach(function(b) {
+      if (!b.alive || hit) return;
+      if (
+        ball.x + ball.r > b.x && ball.x - ball.r < b.x + BRICK_W &&
+        ball.y + ball.r > b.y && ball.y - ball.r < b.y + BRICK_H
+      ) {
+        hit = true;
+        b.hp--;
+        if (b.hp <= 0) { b.alive = false; score += 10; document.getElementById('sc').textContent = score; }
+
+        // which side did we hit?
+        var fromLeft   = ball.x < b.x + BRICK_W / 2;
+        var fromTop    = ball.y < b.y + BRICK_H / 2;
+        var overlapX   = fromLeft  ? (ball.x + ball.r - b.x)      : (b.x + BRICK_W - (ball.x - ball.r));
+        var overlapY   = fromTop   ? (ball.y + ball.r - b.y)      : (b.y + BRICK_H - (ball.y - ball.r));
+        if (overlapX < overlapY) ball.vx = fromLeft ? -Math.abs(ball.vx) : Math.abs(ball.vx);
+        else                     ball.vy = fromTop  ? -Math.abs(ball.vy) : Math.abs(ball.vy);
+      }
+    });
+
+    // all bricks cleared → next level
+    if (!bricks.some(function(b) { return b.alive; })) {
+      level++;
+      document.getElementById('lvl').textContent = level;
+      document.getElementById('msg').textContent = 'Level ' + level + '! Space to launch';
+      newLevel();
+      return;
+    }
+
+    // ball lost
+    if (ball.y - ball.r > H) {
+      lives--;
+      document.getElementById('lv').textContent = lives;
+      if (lives <= 0) {
+        gameOver = true;
+        cancelAnimationFrame(raf);
+        document.getElementById('msg').textContent = 'GAME OVER \u2014 Space to restart';
+        ctx.fillStyle = 'rgba(224,52,52,0.15)';
+        ctx.fillRect(0, 0, W, H);
+        return;
+      }
+      resetBall();
+      document.getElementById('msg').textContent = 'Space to launch';
+    }
+  }
+
+  // ── DRAW ─────────────────────────────────────
+  function draw() {
+    ctx.fillStyle = '#060810';
+    ctx.fillRect(0, 0, W, H);
+
+    // bricks
+    bricks.forEach(function(b) {
+      if (!b.alive) return;
+      ctx.fillStyle = b.color;
+      ctx.fillRect(b.x, b.y, BRICK_W, BRICK_H);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(b.x, b.y, BRICK_W, 4);
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.fillRect(b.x, b.y + BRICK_H - 3, BRICK_W, 3);
+    });
+
+    // paddle
+    ctx.fillStyle = '#1a6fff';
+    ctx.beginPath();
+    ctx.roundRect(paddle.x, paddle.y, paddle.w, paddle.h, 4);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillRect(paddle.x + 4, paddle.y + 2, paddle.w - 8, 3);
+
+    // ball
+    ctx.fillStyle = '#e2e6f0';
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+    ctx.fill();
+    // glow
+    ctx.shadowColor = '#1a6fff';
+    ctx.shadowBlur  = 10;
+    ctx.fillStyle   = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r - 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  function loop() {
+    update();
+    draw();
+    raf = requestAnimationFrame(loop);
+  }
+
+  function startGame() {
+    document.getElementById('start-overlay').style.display = 'none';
+    newGame();
+    raf = requestAnimationFrame(loop);
+  }
+
+  // ── INPUT ─────────────────────────────────────
+  var keys = {};
+  document.addEventListener('keydown', function(e) {
+    keys[e.key] = true;
+    if (document.getElementById('start-overlay').style.display !== 'none') { startGame(); return; }
+    if (e.key === ' ') {
+      e.preventDefault();
+      if (gameOver) { cancelAnimationFrame(raf); startGame(); }
+      else launch();
+    }
+    if (['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+  });
+  document.addEventListener('keyup', function(e) { keys[e.key] = false; });
+
+  // move paddle every 16ms from keys
+  setInterval(function() {
+    if (!paddle) return;
+    var spd = 6;
+    if (keys['ArrowLeft'])  paddle.x = Math.max(0, paddle.x - spd);
+    if (keys['ArrowRight']) paddle.x = Math.min(W - paddle.w, paddle.x + spd);
+  }, 16);
+
+  // mouse / touch
+  canvas.addEventListener('mousemove', function(e) {
+    if (!paddle) return;
+    var rect = canvas.getBoundingClientRect();
+    var mx = (e.clientX - rect.left) * (W / rect.width);
+    paddle.x = Math.min(W - paddle.w, Math.max(0, mx - paddle.w / 2));
+  });
+  canvas.addEventListener('click', function() { launch(); });
+<\/script>
+</body>
+</html>`
+};
+  // ──────────────────────────────────────────────
+// SPACE INVADERS — drop next to gamezone.html
+// or paste contents into a <script> tag at the
+// bottom of gamezone.html
+// ──────────────────────────────────────────────
+window.GAMES = window.GAMES || {};
+
+window.GAMES["space-invaders"] = {
+  name: "Space Invaders",
+  category: "action",
+  html: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #060810;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 8px;
+    font-family: 'Courier New', monospace;
+    color: #e2e6f0;
+    overflow: hidden;
+    user-select: none;
+  }
+  canvas { display: block; border: 1px solid #1c2135; }
+  #hud { font-size: 12px; letter-spacing: 2px; color: #1a6fff; }
+  #msg { font-size: 11px; color: #5a6380; letter-spacing: 1px; text-align: center; }
+  #start-overlay {
+    position: fixed; inset: 0;
+    background: rgba(6,8,16,0.9);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px; cursor: pointer; z-index: 10;
+  }
+  #start-overlay h2 { font-size: 26px; letter-spacing: 4px; color: #1a6fff; }
+  #start-overlay p  { font-size: 11px; color: #5a6380; letter-spacing: 2px; }
+</style>
+</head>
+<body>
+
+<div id="start-overlay" onclick="startGame()">
+  <h2>SPACE INVADERS</h2>
+  <p>CLICK TO PLAY</p>
+  <p style="color:#252d45;font-size:10px">← → to move &middot; Space to shoot</p>
+</div>
+
+<div id="hud">SCORE <span id="sc">0</span> &nbsp; LIVES <span id="lv">3</span> &nbsp; WAVE <span id="wv">1</span></div>
+<canvas id="c" width="480" height="440"></canvas>
+<div id="msg">← → to move &mdash; Space to shoot &mdash; Space to restart</div>
+
+<script>
+  var canvas = document.getElementById('c');
+  var ctx    = canvas.getContext('2d');
+  var W = 480, H = 440;
+
+  var aliens, alienDx, alienDy, playerX, playerBullets, alienBullets;
+  var score, lives, wave, raf, gameOver, shootCooldown, alienShootTimer;
+  var starField;
+
+  // ── STARFIELD ────────────────────────────────
+  function makeStars() {
+    starField = Array.from({ length: 60 }, function() {
+      return { x: Math.random() * W, y: Math.random() * H, r: Math.random() * 1.5 + 0.3, speed: Math.random() * 0.3 + 0.1 };
+    });
+  }
+
+  // ── ALIEN GRID ───────────────────────────────
+  var ROWS = 4, COLS = 10;
+  var ALIEN_W = 30, ALIEN_H = 20, ALIEN_PAD_X = 14, ALIEN_PAD_Y = 16;
+  var ALIEN_START_X = 30, ALIEN_START_Y = 50;
+
+  var ALIEN_COLORS = ['#e03434', '#e0883a', '#d4a017', '#1aaa5a'];
+
+  function makeAliens() {
+    aliens = [];
+    for (var r = 0; r < ROWS; r++) {
+      for (var c = 0; c < COLS; c++) {
+        aliens.push({
+          x: ALIEN_START_X + c * (ALIEN_W + ALIEN_PAD_X),
+          y: ALIEN_START_Y + r * (ALIEN_H + ALIEN_PAD_Y),
+          alive: true,
+          row: r,
+          frame: 0
+        });
+      }
+    }
+    alienDx = 1 + wave * 0.15;
+    alienDy = 0;
+  }
+
+  function newGame() {
+    score = 0; lives = 3; wave = 1; gameOver = false;
+    shootCooldown = 0; alienShootTimer = 0;
+    playerX = W / 2 - 18;
+    playerBullets = [];
+    alienBullets  = [];
+    makeStars();
+    makeAliens();
+    document.getElementById('sc').textContent = 0;
+    document.getElementById('lv').textContent = 3;
+    document.getElementById('wv').textContent = 1;
+    document.getElementById('msg').textContent = '\u2190 \u2192 to move \u2014 Space to shoot \u2014 Space to restart';
+  }
+
+  // ── DRAW ALIEN ───────────────────────────────
+  function drawAlien(x, y, row, frame) {
+    var col = ALIEN_COLORS[row % ALIEN_COLORS.length];
+    ctx.fillStyle = col;
+    // body
+    ctx.fillRect(x + 6, y + 2, 18, 14);
+    // head
+    ctx.fillRect(x + 10, y, 10, 4);
+    // legs (alternate frames)
+    if (frame % 2 === 0) {
+      ctx.fillRect(x + 4,  y + 14, 5, 5);
+      ctx.fillRect(x + 21, y + 14, 5, 5);
+      ctx.fillRect(x + 10, y + 16, 4, 3);
+      ctx.fillRect(x + 16, y + 16, 4, 3);
+    } else {
+      ctx.fillRect(x + 4,  y + 16, 5, 3);
+      ctx.fillRect(x + 21, y + 16, 5, 3);
+      ctx.fillRect(x + 8,  y + 14, 5, 5);
+      ctx.fillRect(x + 17, y + 14, 5, 5);
+    }
+    // eyes
+    ctx.fillStyle = '#060810';
+    ctx.fillRect(x + 9,  y + 5, 4, 4);
+    ctx.fillRect(x + 17, y + 5, 4, 4);
+  }
+
+  // ── DRAW PLAYER ──────────────────────────────
+  function drawPlayer(x) {
+    ctx.fillStyle = '#1a6fff';
+    // base
+    ctx.fillRect(x,      H - 32, 36, 10);
+    // body
+    ctx.fillRect(x + 6,  H - 42, 24, 12);
+    // cannon
+    ctx.fillRect(x + 15, H - 52, 6, 12);
+    // highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(x + 6, H - 42, 24, 4);
+  }
+
+  // ── UPDATE ───────────────────────────────────
+  var frame = 0;
+  var alienMoveTimer = 0;
+
+  function update() {
+    frame++;
+
+    // scroll stars
+    starField.forEach(function(s) {
+      s.y += s.speed;
+      if (s.y > H) { s.y = 0; s.x = Math.random() * W; }
+    });
+
+    // player movement
+    var spd = 5;
+    if (keys['ArrowLeft'])  playerX = Math.max(0, playerX - spd);
+    if (keys['ArrowRight']) playerX = Math.min(W - 36, playerX + spd);
+    if (shootCooldown > 0) shootCooldown--;
+
+    // move player bullets
+    playerBullets = playerBullets.filter(function(b) { return b.y > -10; });
+    playerBullets.forEach(function(b) { b.y -= 9; });
+
+    // move alien bullets
+    alienBullets = alienBullets.filter(function(b) { return b.y < H + 10; });
+    alienBullets.forEach(function(b) { b.y += 4 + wave * 0.3; });
+
+    // move aliens (timer based so speed is consistent)
+    var alive = aliens.filter(function(a) { return a.alive; });
+    alienMoveTimer++;
+    var moveEvery = Math.max(4, 18 - alive.length * 0.3 - wave);
+    if (alienMoveTimer >= moveEvery) {
+      alienMoveTimer = 0;
+
+      // find bounds
+      var minX = Infinity, maxX = -Infinity, maxY = -Infinity;
+      alive.forEach(function(a) {
+        minX = Math.min(minX, a.x);
+        maxX = Math.max(maxX, a.x + ALIEN_W);
+        maxY = Math.max(maxY, a.y + ALIEN_H);
+      });
+
+      // hit wall → drop and reverse
+      if (maxX + alienDx > W - 10 || minX + alienDx < 10) {
+        alienDx = -alienDx;
+        aliens.forEach(function(a) { a.y += 14; });
+        // reached player level
+        if (maxY > H - 60) {
+          endGame();
+          return;
+        }
+      } else {
+        aliens.forEach(function(a) { a.x += alienDx; a.frame++; });
+      }
+    }
+
+    // alien shooting
+    alienShootTimer--;
+    if (alienShootTimer <= 0 && alive.length) {
+      alienShootTimer = Math.max(20, 60 - wave * 5);
+      // pick a random alien in the front row per column
+      var cols = {};
+      alive.forEach(function(a) {
+        var col = Math.round(a.x / (ALIEN_W + ALIEN_PAD_X));
+        if (!cols[col] || a.y > cols[col].y) cols[col] = a;
+      });
+      var shooters = Object.values(cols);
+      var shooter  = shooters[Math.floor(Math.random() * shooters.length)];
+      if (shooter) alienBullets.push({ x: shooter.x + ALIEN_W / 2, y: shooter.y + ALIEN_H });
+    }
+
+    // bullet vs alien
+    playerBullets.forEach(function(pb) {
+      aliens.forEach(function(a) {
+        if (!a.alive) return;
+        if (pb.x > a.x && pb.x < a.x + ALIEN_W && pb.y > a.y && pb.y < a.y + ALIEN_H) {
+          a.alive = false;
+          pb.y = -999;
+          score += 10 + wave * 5;
+          document.getElementById('sc').textContent = score;
+        }
+      });
+    });
+
+    // alien bullet vs player
+    alienBullets.forEach(function(ab) {
+      if (ab.x > playerX && ab.x < playerX + 36 && ab.y > H - 52 && ab.y < H - 22) {
+        ab.y = H + 999;
+        lives--;
+        document.getElementById('lv').textContent = lives;
+        if (lives <= 0) { endGame(); return; }
+      }
+    });
+
+    // all aliens dead → next wave
+    if (!alive.length) {
+      wave++;
+      document.getElementById('wv').textContent = wave;
+      playerBullets = [];
+      alienBullets  = [];
+      makeAliens();
+    }
+  }
+
+  function endGame() {
+    gameOver = true;
+    cancelAnimationFrame(raf);
+    document.getElementById('msg').textContent = 'GAME OVER \u2014 Space to restart';
+    ctx.fillStyle = 'rgba(224,52,52,0.15)';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ── DRAW ─────────────────────────────────────
+  function draw() {
+    ctx.fillStyle = '#060810';
+    ctx.fillRect(0, 0, W, H);
+
+    // stars
+    starField.forEach(function(s) {
+      ctx.fillStyle = 'rgba(255,255,255,' + (s.r / 2) + ')';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // aliens
+    aliens.forEach(function(a) {
+      if (!a.alive) return;
+      drawAlien(a.x, a.y, a.row, a.frame);
+    });
+
+    // player
+    drawPlayer(playerX);
+
+    // player bullets
+    playerBullets.forEach(function(b) {
+      ctx.fillStyle = '#00e5ff';
+      ctx.shadowColor = '#00e5ff';
+      ctx.shadowBlur  = 6;
+      ctx.fillRect(b.x - 1, b.y, 3, 12);
+      ctx.shadowBlur = 0;
+    });
+
+    // alien bullets
+    alienBullets.forEach(function(b) {
+      ctx.fillStyle = '#e03434';
+      ctx.shadowColor = '#e03434';
+      ctx.shadowBlur  = 6;
+      ctx.fillRect(b.x - 2, b.y, 4, 10);
+      ctx.shadowBlur = 0;
+    });
+
+    // ground line
+    ctx.fillStyle = '#1a6fff';
+    ctx.fillRect(0, H - 18, W, 2);
+  }
+
+  function loop() {
+    update();
+    draw();
+    raf = requestAnimationFrame(loop);
+  }
+
+  function startGame() {
+    document.getElementById('start-overlay').style.display = 'none';
+    newGame();
+    raf = requestAnimationFrame(loop);
+  }
+
+  // ── INPUT ─────────────────────────────────────
+  var keys = {};
+  document.addEventListener('keydown', function(e) {
+    keys[e.key] = true;
+    if (document.getElementById('start-overlay').style.display !== 'none') { startGame(); return; }
+
+    if (e.key === ' ') {
+      e.preventDefault();
+      if (gameOver) { cancelAnimationFrame(raf); startGame(); return; }
+      if (shootCooldown <= 0) {
+        playerBullets.push({ x: playerX + 18, y: H - 55 });
+        shootCooldown = 18;
+      }
+    }
+    if (['ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+  });
+  document.addEventListener('keyup', function(e) { keys[e.key] = false; });
+<\/script>
+</body>
+</html>`
+};
 </body>
 </html>
